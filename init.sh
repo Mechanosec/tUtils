@@ -85,9 +85,15 @@ ensure_npm_prefix() {
         npm config set prefix "$user_prefix"
         export PATH="$user_prefix/bin:$PATH"
 
-        local profile_file="$HOME/.zshrc"
-        [ -f "$HOME/.bashrc" ] && profile_file="$HOME/.bashrc"
         local export_line="export PATH=\"$user_prefix/bin:\$PATH\""
+        local shell_name
+        shell_name=$(basename "${SHELL:-sh}")
+        local profile_file
+        case "$shell_name" in
+            zsh)  profile_file="$HOME/.zshrc" ;;
+            bash) profile_file="$HOME/.bashrc" ;;
+            *)    profile_file="$HOME/.profile" ;;
+        esac
         if ! grep -qF "$export_line" "$profile_file" 2>/dev/null; then
             echo "" >> "$profile_file"
             echo "# npm global prefix" >> "$profile_file"
