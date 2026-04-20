@@ -74,6 +74,30 @@ build_project() {
     fi
 }
 
+# Ensure npm prefix is user-writable (no sudo needed)
+ensure_npm_prefix() {
+    local npm_prefix
+    npm_prefix=$(npm config get prefix 2>/dev/null)
+    if [ ! -w "$npm_prefix" ]; then
+        local user_prefix="$HOME/.npm-global"
+        echo -e "${YELLOW}⚠ npm prefix '$npm_prefix' is not writable. Configuring user prefix: $user_prefix${NC}"
+        mkdir -p "$user_prefix"
+        npm config set prefix "$user_prefix"
+        export PATH="$user_prefix/bin:$PATH"
+
+        local profile_file="$HOME/.zshrc"
+        [ -f "$HOME/.bashrc" ] && profile_file="$HOME/.bashrc"
+        local export_line="export PATH=\"$user_prefix/bin:\$PATH\""
+        if ! grep -qF "$export_line" "$profile_file" 2>/dev/null; then
+            echo "" >> "$profile_file"
+            echo "# npm global prefix" >> "$profile_file"
+            echo "$export_line" >> "$profile_file"
+            echo -e "${GREEN}✓ Added $user_prefix/bin to PATH in $profile_file${NC}"
+            echo -e "${YELLOW}  Run: source $profile_file${NC}"
+        fi
+    fi
+}
+
 # Main function
 main() {
     echo -e "${MAGENTA}"
@@ -81,7 +105,9 @@ main() {
     echo "║     tUtils - TUI Builder & Linker     ║"
     echo "╚════════════════════════════════════════╝"
     echo -e "${NC}"
-    
+
+    ensure_npm_prefix
+
     local success_count=0
     local fail_count=0
     local built_commands=()

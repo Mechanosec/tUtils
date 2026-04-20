@@ -156,10 +156,14 @@ tUtils/
 
 ### Помилка: "Command not found"
 
-Після білду виконайте:
+`init.sh` автоматично налаштовує npm prefix. Якщо команда не знайдена після першого запуску:
 ```bash
-npm link
+source ~/.bashrc
 ```
+
+### Помилка: EACCES / permission denied при npm link
+
+`init.sh` автоматично виправляє це, налаштовуючи `~/.npm-global` як prefix. Не потрібен `sudo`.
 
 ### Помилки TypeScript
 
