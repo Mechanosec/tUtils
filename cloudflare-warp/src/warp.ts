@@ -53,12 +53,12 @@ export class WarpClient {
   }
 
   async setMode(mode: "warp" | "doh" | "warp+doh" | "proxy"): Promise<void> {
-    await execAsync(`warp-cli set-mode ${mode}`);
+    await execAsync(`warp-cli mode ${mode}`);
   }
 
   async getSettings(): Promise<WarpSettings> {
     try {
-      const { stdout } = await execAsync("warp-cli settings");
+      const { stdout } = await execAsync("warp-cli settings list");
       const lines = stdout.trim().split("\n");
 
       const settings: WarpSettings = {
@@ -92,7 +92,7 @@ export class WarpClient {
 
   async getAccount(): Promise<WarpAccount | null> {
     try {
-      const { stdout } = await execAsync("warp-cli account");
+      const { stdout } = await execAsync("warp-cli registration show");
       const lines = stdout.trim().split("\n");
 
       const account: WarpAccount = {
@@ -103,11 +103,8 @@ export class WarpClient {
         if (line.includes("Account type:")) {
           account.accountType = line.split(":")[1]?.trim() || "Free";
         }
-        if (line.includes("License:")) {
+        if (line.startsWith("License:")) {
           account.license = line.split(":")[1]?.trim();
-        }
-        if (line.includes("Premium:")) {
-          account.premium = line.includes("true") || line.includes("Yes");
         }
       }
 
@@ -119,17 +116,30 @@ export class WarpClient {
 
   async getStats(): Promise<WarpStats> {
     try {
-      const { stdout } = await execAsync("warp-cli warp-stats");
+      const { stdout } = await execAsync("warp-cli tunnel stats");
       const lines = stdout.trim().split("\n");
 
       const stats: WarpStats = {};
 
       for (const line of lines) {
-        if (line.includes("Bytes Received:")) {
-          stats.bytesReceived = line.split(":")[1]?.trim();
+        if (line.startsWith("Tunnel Protocol:")) {
+          stats.protocol = line.split(":").slice(1).join(":").trim();
         }
-        if (line.includes("Bytes Sent:")) {
-          stats.bytesSent = line.split(":")[1]?.trim();
+        if (line.startsWith("Endpoints:")) {
+          stats.endpoint = line.split(":").slice(1).join(":").trim();
+        }
+        if (line.startsWith("Sent:")) {
+          const match = line.match(/Sent:\s*([^;]+);\s*Received:\s*(.+)/);
+          if (match) {
+            stats.sent = match[1].trim();
+            stats.received = match[2].trim();
+          }
+        }
+        if (line.startsWith("Estimated latency:")) {
+          stats.latency = line.split(":")[1]?.trim();
+        }
+        if (line.startsWith("Estimated loss:")) {
+          stats.loss = line.split(":")[1]?.trim();
         }
       }
 

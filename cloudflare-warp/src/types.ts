@@ -19,8 +19,12 @@ export interface WarpAccount {
 }
 
 export interface WarpStats {
-  bytesReceived?: string;
-  bytesSent?: string;
+  sent?: string;
+  received?: string;
+  latency?: string;
+  loss?: string;
+  protocol?: string;
+  endpoint?: string;
 }
 
 export type Screen = "main" | "settings" | "stats" | "help";

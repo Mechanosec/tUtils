@@ -22,21 +22,40 @@ export const StatsView: React.FC<StatsViewProps> = ({ stats }) => {
         paddingX={2}
         paddingY={1}
       >
-        {stats.bytesReceived ? (
+        {stats.sent ? (
           <>
+            {stats.protocol && (
+              <Box marginBottom={1}>
+                <Box width={18}><Text dimColor>Protocol:</Text></Box>
+                <Text color="cyan">{stats.protocol}</Text>
+              </Box>
+            )}
             <Box marginBottom={1}>
-              <Box width={18}>
-                <Text dimColor>Bytes Received:</Text>
-              </Box>
-              <Text color="green">{stats.bytesReceived}</Text>
+              <Box width={18}><Text dimColor>Received:</Text></Box>
+              <Text color="green">{stats.received}</Text>
             </Box>
-
-            <Box>
-              <Box width={18}>
-                <Text dimColor>Bytes Sent:</Text>
-              </Box>
-              <Text color="blue">{stats.bytesSent || "N/A"}</Text>
+            <Box marginBottom={1}>
+              <Box width={18}><Text dimColor>Sent:</Text></Box>
+              <Text color="blue">{stats.sent}</Text>
             </Box>
+            {stats.latency && (
+              <Box marginBottom={1}>
+                <Box width={18}><Text dimColor>Latency:</Text></Box>
+                <Text color="yellow">{stats.latency}</Text>
+              </Box>
+            )}
+            {stats.loss && (
+              <Box marginBottom={1}>
+                <Box width={18}><Text dimColor>Loss:</Text></Box>
+                <Text>{stats.loss}</Text>
+              </Box>
+            )}
+            {stats.endpoint && (
+              <Box>
+                <Box width={18}><Text dimColor>Endpoint:</Text></Box>
+                <Text dimColor>{stats.endpoint}</Text>
+              </Box>
+            )}
           </>
         ) : (
           <Box>

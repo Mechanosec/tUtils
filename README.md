@@ -165,6 +165,27 @@ source ~/.bashrc
 
 `init.sh` автоматично виправляє це, налаштовуючи `~/.npm-global` як prefix. Не потрібен `sudo`.
 
+### lazywarp: не вдається підключитись / "Error toggling connection"
+
+WARP потребує реєстрації перед першим підключенням. Перевір статус:
+```bash
+warp-cli status
+```
+
+Якщо бачиш `Registration Missing` — зареєструй клієнт:
+```bash
+warp-cli registration new
+```
+
+Після реєстрації WARP підключиться через lazywarp або вручну:
+```bash
+warp-cli connect
+```
+
+### lazywarp: вкладка Stats порожня
+
+`warp-cli tunnel stats` повертає дані лише коли WARP підключений. Підключись і натисни `[i]`.
+
 ### Помилки TypeScript
 
 Перевірте що `moduleResolution: "nodenext"` та `module: "NodeNext"` в `tsconfig.json`.
