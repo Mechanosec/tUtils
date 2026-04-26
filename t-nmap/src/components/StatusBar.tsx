@@ -21,10 +21,12 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         {message ? (
           <Text color="green">ℹ {message}</Text>
         ) : isScanning ? (
-          <Text color="gray">
+          <Box>
             <Text color="yellow">● </Text>
-            {mm}:{ss}  │  hosts: {hostsFound}  │  <Text color="red">[x]</Text> stop
-          </Text>
+            <Text color="gray">{mm}:{ss}  │  hosts: {hostsFound}  │  </Text>
+            <Text color="red">[x]</Text>
+            <Text color="gray"> stop</Text>
+          </Box>
         ) : (
           <Text color="gray" dimColor>
             [↑↓] type  [tab] target  [⏎] run  [v] toggle  [e] export  [q] quit

@@ -13,11 +13,6 @@ interface ResultsPanelProps {
 export const ResultsPanel: React.FC<ResultsPanelProps> = ({
   hosts, rawLines, viewMode, isScanning,
 }) => {
-  const totalOpen = hosts.reduce(
-    (sum, h) => sum + h.ports.filter(p => p.state === 'open').length,
-    0,
-  );
-
   return (
     <Box flexDirection="column" flexGrow={1} paddingLeft={2}>
       <Box marginBottom={1}>
@@ -37,14 +32,18 @@ export const ResultsPanel: React.FC<ResultsPanelProps> = ({
       <Text color="gray" dimColor>{'─'.repeat(52)}</Text>
 
       {viewMode === 'parsed'
-        ? <ParsedView hosts={hosts} totalOpen={totalOpen} />
+        ? <ParsedView hosts={hosts} />
         : <RawView lines={rawLines} />
       }
     </Box>
   );
 };
 
-const ParsedView: React.FC<{ hosts: Host[]; totalOpen: number }> = ({ hosts, totalOpen }) => {
+const ParsedView: React.FC<{ hosts: Host[] }> = ({ hosts }) => {
+  const totalOpen = hosts.reduce(
+    (sum, h) => sum + h.ports.filter(p => p.state === 'open').length,
+    0,
+  );
   if (hosts.length === 0) {
     return <Text color="gray" dimColor>No hosts found yet...</Text>;
   }
@@ -98,7 +97,7 @@ const RawView: React.FC<{ lines: string[] }> = ({ lines }) => {
   return (
     <Box flexDirection="column">
       {lines.slice(-30).map((line, i) => (
-        <Text key={i} color="gray">{line}</Text>
+        <Text key={lines.length - Math.min(30, lines.length) + i} color="gray">{line}</Text>
       ))}
     </Box>
   );
