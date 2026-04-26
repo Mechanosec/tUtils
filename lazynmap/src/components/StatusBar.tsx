@@ -29,7 +29,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
           </Box>
         ) : (
           <Text color="gray" dimColor>
-            [↑↓] type  [tab] target  [⏎] run  [v] toggle  [e] export  [q] quit
+            [j/k] type  [↑↓] scroll  [tab] target  [⏎] run  [v] toggle  [e] export  [q] quit
           </Text>
         )}
       </Box>

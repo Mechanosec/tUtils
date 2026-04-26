@@ -3,11 +3,13 @@ import { Box, useApp, useInput } from 'ink';
 import { writeFileSync } from 'node:fs';
 import { Header } from './components/Header.js';
 import { ConfigPanel } from './components/ConfigPanel.js';
-import { ResultsPanel } from './components/ResultsPanel.js';
+import { ResultsPanel, flattenHosts } from './components/ResultsPanel.js';
 import { StatusBar } from './components/StatusBar.js';
 import { NmapClient, isNmapAvailable } from './nmap.js';
 import type { Host, ScanType, ViewMode } from './types.js';
 import { SCAN_TYPES } from './types.js';
+
+const VISIBLE_LINES = Math.max(5, (process.stdout.rows || 24) - 10);
 
 export const App: React.FC = () => {
   const { exit } = useApp();
@@ -24,8 +26,10 @@ export const App: React.FC = () => {
   const [rawLines, setRawLines]     = useState<string[]>([]);
   const [elapsed, setElapsed]       = useState(0);
   const [message, setMessage]       = useState('');
+  const [scrollOffset, setScrollOffset] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoScrollRef = useRef(true);
 
   const scanType: ScanType = SCAN_TYPES[selectedIndex]!;
 
@@ -51,6 +55,8 @@ export const App: React.FC = () => {
     setRawLines([]);
     setIsScanning(true);
     setElapsed(0);
+    setScrollOffset(0);
+    autoScrollRef.current = true;
     if (scanType === 'vuln') setViewMode('raw');
 
     timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
@@ -75,13 +81,27 @@ export const App: React.FC = () => {
   useEffect(() => {
     const c = client.current;
 
-    c.on('line', (line: string) => setRawLines(prev => [...prev, line]));
+    c.on('line', (line: string) => {
+      setRawLines(prev => {
+        const next = [...prev, line];
+        if (autoScrollRef.current) {
+          setScrollOffset(Math.max(0, next.length - VISIBLE_LINES));
+        }
+        return next;
+      });
+    });
 
     c.on('host', (host: Host) => {
       setHosts(prev => {
-        const idx = prev.findIndex(h => h.ip === host.ip);
-        if (idx >= 0) { const next = [...prev]; next[idx] = host; return next; }
-        return [...prev, host];
+        const next = (() => {
+          const idx = prev.findIndex(h => h.ip === host.ip);
+          if (idx >= 0) { const a = [...prev]; a[idx] = host; return a; }
+          return [...prev, host];
+        })();
+        if (autoScrollRef.current) {
+          setScrollOffset(Math.max(0, flattenHosts(next).length - VISIBLE_LINES));
+        }
+        return next;
       });
     });
 
@@ -108,9 +128,27 @@ export const App: React.FC = () => {
       return;
     }
 
-    if (input === 'q')                               { client.current.kill(); exit(); return; }
-    if (key.upArrow   && !isScanning) setSelectedIndex(i => (i - 1 + SCAN_TYPES.length) % SCAN_TYPES.length);
-    if (key.downArrow && !isScanning) setSelectedIndex(i => (i + 1) % SCAN_TYPES.length);
+    if (input === 'q') { client.current.kill(); exit(); return; }
+
+    if (input === 'j' && !isScanning) setSelectedIndex(i => (i + 1) % SCAN_TYPES.length);
+    if (input === 'k' && !isScanning) setSelectedIndex(i => (i - 1 + SCAN_TYPES.length) % SCAN_TYPES.length);
+
+    if (key.upArrow) {
+      autoScrollRef.current = false;
+      setScrollOffset(s => Math.max(0, s - 1));
+      return;
+    }
+    if (key.downArrow) {
+      setScrollOffset(s => {
+        const totalLines = rawLines.length;
+        const maxOffset = Math.max(0, totalLines - VISIBLE_LINES);
+        const next = Math.min(maxOffset, s + 1);
+        if (next >= maxOffset) autoScrollRef.current = true;
+        return next;
+      });
+      return;
+    }
+
     if (key.tab)                      { setTargetFocused(true); return; }
     if ((key.return || input === ' ') && !isScanning) runScan();
     if (input === 'x' && isScanning)  stopScan();
@@ -148,6 +186,8 @@ export const App: React.FC = () => {
             rawLines={rawLines}
             viewMode={viewMode}
             isScanning={isScanning}
+            scrollOffset={scrollOffset}
+            visibleLines={VISIBLE_LINES}
           />
         </Box>
       </Box>
