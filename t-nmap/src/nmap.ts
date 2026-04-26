@@ -1,5 +1,9 @@
 import { execFileSync } from 'node:child_process';
+import { EventEmitter } from 'node:events';
+import { spawn, type ChildProcess } from 'node:child_process';
 import type { Host, Port } from './types.js';
+import type { ScanType } from './types.js';
+import { SCAN_TYPE_FLAGS } from './types.js';
 
 export type ParseResult =
   | { type: 'host'; host: Host }
@@ -55,5 +59,90 @@ export function isNmapAvailable(): boolean {
     return true;
   } catch {
     return false;
+  }
+}
+
+export class NmapClient extends EventEmitter {
+  private proc: ChildProcess | null = null;
+  private currentHost: Host | null = null;
+
+  // spawn() passes args as array — no shell involved, no injection risk
+  buildArgs(target: string, scanType: ScanType, customFlags: string): string[] {
+    if (scanType === 'custom') {
+      return [...customFlags.split(' ').filter(Boolean), target];
+    }
+    return [...SCAN_TYPE_FLAGS[scanType], target];
+  }
+
+  start(target: string, scanType: ScanType, customFlags: string): void {
+    if (this.proc) this.kill();
+    this.currentHost = null;
+
+    const args = this.buildArgs(target, scanType, customFlags);
+    this.proc = spawn('nmap', args);
+
+    let lineBuffer = '';
+
+    this.proc.stdout?.on('data', (chunk: Buffer) => {
+      lineBuffer += chunk.toString();
+      const lines = lineBuffer.split('\n');
+      lineBuffer = lines.pop() ?? '';
+      for (const line of lines) {
+        this.handleLine(line.trimEnd());
+      }
+    });
+
+    this.proc.stderr?.on('data', (chunk: Buffer) => {
+      for (const line of chunk.toString().split('\n')) {
+        if (line.trim()) this.emit('line', line.trimEnd());
+      }
+    });
+
+    this.proc.on('close', () => {
+      if (lineBuffer.trim()) this.handleLine(lineBuffer.trimEnd());
+      if (this.currentHost) {
+        this.emit('host', this.currentHost);
+        this.currentHost = null;
+      }
+      this.proc = null;
+      this.emit('done');
+    });
+  }
+
+  private handleLine(line: string): void {
+    if (!line) return;
+    this.emit('line', line);
+
+    const result = parseNmapLine(line, this.currentHost);
+
+    switch (result.type) {
+      case 'host':
+        if (this.currentHost) this.emit('host', this.currentHost);
+        this.currentHost = result.host;
+        break;
+      case 'port':
+        if (this.currentHost) this.currentHost.ports.push(result.port);
+        break;
+      case 'latency':
+        if (this.currentHost) this.currentHost.latency = result.latency;
+        break;
+      case 'done':
+        if (this.currentHost) {
+          this.emit('host', this.currentHost);
+          this.currentHost = null;
+        }
+        break;
+    }
+  }
+
+  kill(): void {
+    if (this.proc) {
+      this.proc.kill('SIGTERM');
+      this.proc = null;
+    }
+  }
+
+  isRunning(): boolean {
+    return this.proc !== null;
   }
 }
