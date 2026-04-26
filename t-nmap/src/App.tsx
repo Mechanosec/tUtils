@@ -25,17 +25,19 @@ export const App: React.FC = () => {
   const [elapsed, setElapsed]       = useState(0);
   const [message, setMessage]       = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const messageTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scanType: ScanType = SCAN_TYPES[selectedIndex]!;
 
-  const showMessage = (msg: string, duration = 3000) => {
+  const showMessage = useCallback((msg: string, duration = 3000) => {
+    if (messageTimerRef.current) clearTimeout(messageTimerRef.current);
     setMessage(msg);
-    setTimeout(() => setMessage(''), duration);
-  };
+    messageTimerRef.current = setTimeout(() => setMessage(''), duration);
+  }, []);
 
-  const stopTimer = () => {
+  const stopTimer = useCallback(() => {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
-  };
+  }, []);
 
   const runScan = useCallback(() => {
     if (!target.trim())     { showMessage('Enter a target first'); return; }
@@ -53,14 +55,14 @@ export const App: React.FC = () => {
 
     timerRef.current = setInterval(() => setElapsed(e => e + 1), 1000);
     client.current.start(target.trim(), scanType, customFlags);
-  }, [target, scanType, customFlags]);
+  }, [target, scanType, customFlags, showMessage]);
 
   const stopScan = useCallback(() => {
     client.current.kill();
     setIsScanning(false);
     stopTimer();
     showMessage('Scan stopped');
-  }, []);
+  }, [showMessage, stopTimer]);
 
   const exportResults = useCallback(() => {
     if (rawLines.length === 0) { showMessage('Nothing to export'); return; }
@@ -68,7 +70,7 @@ export const App: React.FC = () => {
     const filename = `lazyscan-${ts}.txt`;
     writeFileSync(filename, rawLines.join('\n'));
     showMessage(`Saved to ${filename}`);
-  }, [rawLines]);
+  }, [rawLines, showMessage]);
 
   useEffect(() => {
     const c = client.current;
@@ -89,7 +91,7 @@ export const App: React.FC = () => {
       showMessage('Scan complete');
     });
 
-    return () => { c.kill(); stopTimer(); };
+    return () => { c.kill(); stopTimer(); if (messageTimerRef.current) clearTimeout(messageTimerRef.current); };
   }, []);
 
   useInput((input, key) => {
