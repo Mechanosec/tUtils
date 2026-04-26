@@ -65,6 +65,7 @@ export function isNmapAvailable(): boolean {
 export class NmapClient extends EventEmitter {
   private proc: ChildProcess | null = null;
   private currentHost: Host | null = null;
+  private killed = false;
 
   // spawn() passes args as array — no shell involved, no injection risk
   buildArgs(target: string, scanType: ScanType, customFlags: string): string[] {
@@ -79,7 +80,7 @@ export class NmapClient extends EventEmitter {
     this.currentHost = null;
 
     const args = this.buildArgs(target, scanType, customFlags);
-    this.proc = spawn('nmap', args);
+    this.proc = spawn('nmap', args, { stdio: ['ignore', 'pipe', 'pipe'] });
 
     let lineBuffer = '';
 
@@ -100,12 +101,16 @@ export class NmapClient extends EventEmitter {
 
     this.proc.on('close', () => {
       if (lineBuffer.trim()) this.handleLine(lineBuffer.trimEnd());
+      // Only reached on abnormal exit when killed: handleLine clears currentHost on 'done' line
       if (this.currentHost) {
         this.emit('host', this.currentHost);
         this.currentHost = null;
       }
       this.proc = null;
-      this.emit('done');
+      if (!this.killed) {
+        this.emit('done');
+      }
+      this.killed = false;
     });
   }
 
@@ -137,6 +142,7 @@ export class NmapClient extends EventEmitter {
 
   kill(): void {
     if (this.proc) {
+      this.killed = true;
       this.proc.kill('SIGTERM');
       this.proc = null;
     }
