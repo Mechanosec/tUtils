@@ -13,7 +13,7 @@ NC='\033[0m' # No Color
 # Format: "folder:command:description"
 PROJECTS=(
     "cloudflare-warp:lazywarp:Cloudflare WARP Manager"
-    "t-nmap:lazynmap:nmap Terminal UI"
+    "lazynmap:lazynmap:nmap Terminal UI"
 )
 
 # Function to build a single project
