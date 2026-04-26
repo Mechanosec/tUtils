@@ -16,12 +16,12 @@ export function parseNmapLine(line: string, currentHost: Host | null): ParseResu
     return { type: 'host', host: { ip, hostname, latency: undefined, ports: [] } };
   }
 
-  const portMatch = line.match(/^(\d+)\/(tcp|udp)\s+(open|filtered|closed)\s+(\S+)(?:\s+(.+))?$/);
+  const portMatch = line.match(/^(\d+)\/(tcp|udp)\s+(open\|filtered|open|filtered|closed)\s+(\S+)(?:\s+(.+))?$/);
   if (portMatch && currentHost !== null) {
     const port: Port = {
       number: parseInt(portMatch[1]!, 10),
       protocol: portMatch[2] as 'tcp' | 'udp',
-      state: portMatch[3] as 'open' | 'filtered' | 'closed',
+      state: portMatch[3] as 'open' | 'filtered' | 'closed' | 'open|filtered',
       service: portMatch[4]!,
       version: portMatch[5]?.trim() || undefined,
     };
@@ -34,7 +34,7 @@ export function parseNmapLine(line: string, currentHost: Host | null): ParseResu
   }
 
   const doneMatch = line.match(
-    /^Nmap done: (\d+) IP addresses? \((\d+) hosts? up\) scanned in (.+)/,
+    /^Nmap done: (\d+) IP address(?:es)? \((\d+) hosts? up\) scanned in (.+)/,
   );
   if (doneMatch) {
     return {

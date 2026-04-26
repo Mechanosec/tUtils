@@ -4,7 +4,7 @@ export type ViewMode = 'parsed' | 'raw';
 export interface Port {
   number: number;
   protocol: 'tcp' | 'udp';
-  state: 'open' | 'filtered' | 'closed';
+  state: 'open' | 'filtered' | 'closed' | 'open|filtered';
   service: string;
   version?: string;
 }

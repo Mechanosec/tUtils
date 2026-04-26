@@ -63,6 +63,27 @@ test('done line', () => {
   });
 });
 
+test('done line — single host', () => {
+  const result = parseNmapLine(
+    'Nmap done: 1 IP address (1 host up) scanned in 5.00 seconds',
+    null,
+  );
+  assert.deepEqual(result, {
+    type: 'done',
+    hostsUp: 1,
+    hostsTotal: 1,
+    elapsed: '5.00 seconds',
+  });
+});
+
+test('open|filtered UDP port', () => {
+  const result = parseNmapLine('53/udp  open|filtered  domain', makeHost());
+  assert.deepEqual(result, {
+    type: 'port',
+    port: { number: 53, protocol: 'udp', state: 'open|filtered', service: 'domain', version: undefined },
+  });
+});
+
 test('unrecognized line', () => {
   const result = parseNmapLine('Some random output', null);
   assert.deepEqual(result, { type: 'unknown' });
