@@ -140,7 +140,7 @@ export const App: React.FC = () => {
     }
     if (key.downArrow) {
       setScrollOffset(s => {
-        const totalLines = rawLines.length;
+        const totalLines = viewMode === 'raw' ? rawLines.length : flattenHosts(hosts).length;
         const maxOffset = Math.max(0, totalLines - VISIBLE_LINES);
         const next = Math.min(maxOffset, s + 1);
         if (next >= maxOffset) autoScrollRef.current = true;
@@ -152,7 +152,11 @@ export const App: React.FC = () => {
     if (key.tab)                      { setTargetFocused(true); return; }
     if ((key.return || input === ' ') && !isScanning) runScan();
     if (input === 'x' && isScanning)  stopScan();
-    if (input === 'v')                setViewMode(m => m === 'parsed' ? 'raw' : 'parsed');
+    if (input === 'v') {
+      setViewMode(m => m === 'parsed' ? 'raw' : 'parsed');
+      setScrollOffset(0);
+      autoScrollRef.current = false;
+    }
     if (input === 'e')                exportResults();
   });
 
