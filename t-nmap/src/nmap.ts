@@ -1,0 +1,59 @@
+import { execFileSync } from 'node:child_process';
+import type { Host, Port } from './types.js';
+
+export type ParseResult =
+  | { type: 'host'; host: Host }
+  | { type: 'port'; port: Port }
+  | { type: 'latency'; latency: string }
+  | { type: 'done'; hostsUp: number; hostsTotal: number; elapsed: string }
+  | { type: 'unknown' };
+
+export function parseNmapLine(line: string, currentHost: Host | null): ParseResult {
+  const hostMatch = line.match(/^Nmap scan report for (.+?)(?:\s+\((.+?)\))?$/);
+  if (hostMatch) {
+    const ip = hostMatch[2] ?? hostMatch[1]!;
+    const hostname = hostMatch[2] ? hostMatch[1] : undefined;
+    return { type: 'host', host: { ip, hostname, latency: undefined, ports: [] } };
+  }
+
+  const portMatch = line.match(/^(\d+)\/(tcp|udp)\s+(open|filtered|closed)\s+(\S+)(?:\s+(.+))?$/);
+  if (portMatch && currentHost !== null) {
+    const port: Port = {
+      number: parseInt(portMatch[1]!, 10),
+      protocol: portMatch[2] as 'tcp' | 'udp',
+      state: portMatch[3] as 'open' | 'filtered' | 'closed',
+      service: portMatch[4]!,
+      version: portMatch[5]?.trim() || undefined,
+    };
+    return { type: 'port', port };
+  }
+
+  const latencyMatch = line.match(/^Host is up \((.+?)s latency\)/);
+  if (latencyMatch) {
+    return { type: 'latency', latency: latencyMatch[1]! + 's' };
+  }
+
+  const doneMatch = line.match(
+    /^Nmap done: (\d+) IP addresses? \((\d+) hosts? up\) scanned in (.+)/,
+  );
+  if (doneMatch) {
+    return {
+      type: 'done',
+      hostsTotal: parseInt(doneMatch[1]!, 10),
+      hostsUp: parseInt(doneMatch[2]!, 10),
+      elapsed: doneMatch[3]!,
+    };
+  }
+
+  return { type: 'unknown' };
+}
+
+// execFileSync bypasses the shell — no injection risk even though input is hardcoded
+export function isNmapAvailable(): boolean {
+  try {
+    execFileSync('nmap', ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
