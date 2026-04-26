@@ -1,58 +1,45 @@
-# WARP TUI
+# lazywarp
 
-Мінімалістичний TUI (Text User Interface) для управління Cloudflare WARP.
+Minimal TUI for managing Cloudflare WARP.
 
-## Можливості
-
-- 📊 **Статус з'єднання** - перегляд поточного статусу, режиму та інформації про обліковий запис
-- 🔄 **Перемикання з'єднання** - швидке підключення/відключення за допомогою пробілу
-- ⚙️ **Налаштування** - зміна режиму з'єднання (warp, doh, warp+doh, proxy)
-- 📈 **Статистика** - перегляд переданих/отриманих даних
-- ⌨️ **Зручні клавіші** - інтуїтивні гарячі клавіші для всіх функцій
-
-## Вимоги
+## Requirements
 
 - Node.js >= 18
-- Cloudflare WARP CLI встановлений в системі (`warp-cli`)
+- `warp-cli` installed on the system
 
-## Встановлення
-
-```bash
-# Встановити залежності
-npm install
-
-# Зібрати проект
-npm run build
-
-# Запустити
-npm start
-```
-
-## Розробка
+## Usage
 
 ```bash
-# Запустити в режимі розробки
-npm run dev
+lazywarp
 ```
 
-## Клавіші керування
+## Keybindings
 
-- `space` - Перемкнути з'єднання (підключити/відключити)
-- `r` - Оновити дані
-- `m` - Головний екран
-- `s` - Налаштування
-- `i` - Статистика (інфо)
-- `h` - Допомога
-- `1-4` - Змінити режим з'єднання (в налаштуваннях)
-- `q` - Вийти
+| Key | Action |
+|-----|--------|
+| `Space` | Connect / disconnect |
+| `r` | Refresh data |
+| `m` | Main screen |
+| `s` | Settings |
+| `i` | Stats |
+| `h` | Help |
+| `1–4` | Change mode (in settings) |
+| `q` | Quit |
 
-## Режими з'єднання
+## Connection modes
 
-1. **warp** - Стандартний режим WARP
-2. **doh** - DNS-over-HTTPS режим
-3. **warp+doh** - Комбінований режим
-4. **proxy** - Режим проксі
+| # | Mode | Description |
+|---|------|-------------|
+| 1 | `warp` | Standard WARP mode |
+| 2 | `doh` | DNS-over-HTTPS |
+| 3 | `warp+doh` | Combined |
+| 4 | `proxy` | Proxy mode |
 
-## Ліцензія
+## Troubleshooting
 
-MIT
+**"Registration Missing"** — register the client before connecting for the first time:
+```bash
+warp-cli registration new
+```
+
+**Stats tab is empty** — data is only available when WARP is connected. Connect first, then press `[i]`.
